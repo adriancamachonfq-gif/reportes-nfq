@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFQ - Portal de Reportes Diarios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&family=Roboto:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0A0A0F;
+            --bg-card: #111827;
+            --bg-elevated: #1f2937;
+            --text-main: #F8FAFC;
+            --text-dim: #D1D5DB;
+            --primary: #FF4B4B;
+            --secondary: #2962FF;
+            --gradient-nfq: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+
+            --font-title: 'Montserrat', sans-serif;
+            --font-text: 'Inter', sans-serif;
+            --font-ui: 'Roboto', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-text);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: rgba(10, 10, 15, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-area img {
+            height: 30px;
+            width: auto;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--primary);
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* Screens Layout Master */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Screen: Auth Login */
+        #screen-auth {
+            background: radial-gradient(circle at 50% 50%, #111827 0%, #0A0A0F 100%);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 50px 40px;
+            text-align: center;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-card h1 {
+            font-family: var(--font-title);
+            font-size: clamp(1.8rem, 3vw, 2.2rem);
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .gradient-text {
+            background: var(--gradient-nfq);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-card p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 35px;
+        }
+
+        .btn-google {
+            width: 100%;
+            background: var(--text-main);
+            color: #0A0A0F;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-google:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+        }
+
+        /* Screen: Main Dashboard App */
+        #screen-dashboard {
+            padding-top: 70px;
+            display: none;
+        }
+
+        #screen-dashboard.active {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            background: #0D0E15;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 24px 16px;
+        }
+
+        .sidebar-title {
+            font-family: var(--font-title);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            margin-bottom: 16px;
+            padding-left: 12px;
+            font-weight: 700;
+        }
+
+        .report-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .report-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1px solid transparent;
+        }
+
+        .report-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+        }
+
+        .report-item.active {
+            background: linear-gradient(90deg, rgba(255, 75, 75, 0.15) 0%, rgba(41, 98, 255, 0.05) 100%);
+            border-color: rgba(255, 75, 75, 0.25);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .report-date {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Main Viewport Workspace */
+        .viewer-container {
+            width: 100%;
+            height: 100%;
+            background: #050508;
+            position: relative;
+        }
+
+        .viewer-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .viewer-placeholder h2 {
+            font-family: var(--font-title);
+            font-weight: 700;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #ffffff;
+            display: none;
+        }
+
+        iframe.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <img src="https://lh3.googleusercontent.com/d/1ZRUArlFz7uZOmsEB8cVRBjTHcEZQejNQ" alt="Nfq Logo">
+        </div>
+        <div class="user-badge" id="userContainer" style="display: none;">
+            <img class="user-avatar" id="userPhoto" src="" alt="Avatar">
+            <span id="userName" style="font-size: 0.85rem; font-weight: 500;">Usuario</span>
+            <button class="btn-logout" id="logoutBtn">Salir</button>
+        </div>
+    </header>
+
+    <section class="screen active" id="screen-auth">
+        <div class="login-card">
+            <h1>Portal de <span class="gradient-text">Reportes</span></h1>
+            <p>Acceso restringido y protegido para consultores, arquitectos y analistas de NFQ.</p>
+            <button class="btn-google" id="loginBtn">
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.8 2.71v2.24h2.91c1.7-1.56 2.69-3.86 2.69-6.58z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.24c-.8.54-1.84.87-3.05.87-2.34 0-4.33-1.57-5.03-3.67H.95v2.3A8.99 8.99 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.78A5.4 5.4 0 0 1 3.68 9c0-.62.11-1.21.29-1.78V4.92H.95A8.99 8.99 0 0 0 0 9c0 1.45.35 2.82.95 4.08l2.64-2.04l.38-.26z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.3C13.46.89 11.43 0 9 0A8.99 8.99 0 0 0 .95 4.92l3.02 2.34c.7-2.1 2.69-3.68 5.03-3.68z"/></svg>
+                Iniciar sesión con Google
+            </button>
+        </div>
+    </section>
+
+    <section class="screen" id="screen-dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-title">Cronología de Reportes</div>
+            <ul class="report-list" id="reportListContainer">
+                </ul>
+        </aside>
+
+        <main class="viewer-container">
+            <div class="viewer-placeholder" id="placeholderView">
+                <h2>Ningún reporte seleccionado</h2>
+                <p>Selecciona una fecha en el menú de la izquierda para desplegar el informe web interactivo.</p>
+            </div>
+            <iframe id="reportViewer" src="" title="Visor de Reportes"></iframe>
+        </main>
+    </section>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        // Configuración real vinculada a tu proyecto Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHMFTo57Xg2fQnBJhgvaywI0XPYDwelhU",
+            authDomain: "reportes-nfq.firebaseapp.com",
+            projectId: "reportes-nfq",
+            storageBucket: "reportes-nfq.firebasestorage.app",
+            messagingSenderId: "4191832326",
+            appId: "1:4191832326:web:5769b55302ba0839f3f687"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Lista estática de pruebas para el MVP diario (puedes reemplazar las URLs con reportes reales más adelante)
+        const mockReports = [
+            { id: 1, title: "Reporte Operativo Diario", date: "Hoy, 30 de Junio", url: "https://example.com" },
+            { id: 2, title: "Análisis de Infraestructura y Métricas", date: "Ayer, 29 de Junio", url: "https://wikipedia.org" },
+            { id: 3, title: "Auditoría de Logs Consolidados", date: "Viernes, 26 de Junio", url: "https://example.com" }
+        ];
+
+        // Elementos del DOM
+        const screenAuth = document.getElementById('screen-auth');
+        const screenDashboard = document.getElementById('screen-dashboard');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userContainer = document.getElementById('userContainer');
+        const userPhoto = document.getElementById('userPhoto');
+        const userName = document.getElementById('userName');
+        const reportListContainer = document.getElementById('reportListContainer');
+        const reportViewer = document.getElementById('reportViewer');
+        const placeholderView = document.getElementById('placeholderView');
+
+        // Construcción del menú lateral cronológico
+        function buildReportList() {
+            reportListContainer.innerHTML = '';
+            mockReports.forEach(report => {
+                const li = document.createElement('li');
+                li.className = 'report-item';
+                li.innerHTML = `
+                    <span>${report.title}</span>
+                    <span class="report-date">${report.date}</span>
+                `;
+                li.addEventListener('click', () => {
+                    document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+                    li.classList.add('active');
+                    loadReport(report.url);
+                });
+                reportListContainer.appendChild(li);
+            });
+        }
+
+        function loadReport(url) {
+            placeholderView.style.display = 'none';
+            reportViewer.classList.add('visible');
+            reportViewer.src = url; 
+        }
+
+        // CONTROL DE ACCESO CORPORATIVO (Filtro por dominio)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const email = user.email || "";
+                
+                // REGLA DE SEGURIDAD: Permite el dominio corporativo de NFQ O tu cuenta personal de Gmail para que puedas hacer la demostración
+                if (email.endsWith('@nfq.es') || email.endsWith('@gmail.com')) {
+                    screenAuth.classList.remove('active');
+                    screenDashboard.classList.add('active');
+                    userContainer.style.display = 'flex';
+                    userName.textContent = user.displayName;
+                    userPhoto.src = user.photoURL || "";
+                    buildReportList();
+                } else {
+                    // Cierre de sesión inmediato y rebote si un correo ajeno intenta entrar
+                    alert(`Acceso denegado. Tu cuenta (${email}) no pertenece al dominio corporativo de NFQ.`);
+                    signOut(auth);
+                }
+            } else {
+                screenDashboard.classList.remove('active');
+                screenAuth.classList.add('active');
+                userContainer.style.display = 'none';
+                reportViewer.classList.remove('visible');
+                placeholderView.style.display = 'flex';
+            }
+        });
+
+        // Manejadores de Eventos (Autenticación)
+        loginBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider).catch(error => {
+                console.error("Error en autenticación: ", error);
+            });
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
+        });
+    </script>
+</body>
+</html>
