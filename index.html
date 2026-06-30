@@ -325,6 +325,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // Configuración real vinculada a tu proyecto Firebase
         const firebaseConfig = {
@@ -336,17 +337,11 @@
             appId: "1:4191832326:web:5769b55302ba0839f3f687"
         };
 
-        // Inicializar Firebase
+        // Inicializar servicios cloud de Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-
-        // Lista estática de pruebas para el MVP diario (puedes reemplazar las URLs con reportes reales más adelante)
-        const mockReports = [
-            { id: 1, title: "Reporte Operativo Diario", date: "Hoy, 30 de Junio", url: "https://example.com" },
-            { id: 2, title: "Análisis de Infraestructura y Métricas", date: "Ayer, 29 de Junio", url: "https://wikipedia.org" },
-            { id: 3, title: "Auditoría de Logs Consolidados", date: "Viernes, 26 de Junio", url: "https://example.com" }
-        ];
 
         // Elementos del DOM
         const screenAuth = document.getElementById('screen-auth');
@@ -360,23 +355,38 @@
         const reportViewer = document.getElementById('reportViewer');
         const placeholderView = document.getElementById('placeholderView');
 
-        // Construcción del menú lateral cronológico
-        function buildReportList() {
-            reportListContainer.innerHTML = '';
-            mockReports.forEach(report => {
-                const li = document.createElement('li');
-                li.className = 'report-item';
-                li.innerHTML = `
-                    <span>${report.title}</span>
-                    <span class="report-date">${report.date}</span>
-                `;
-                li.addEventListener('click', () => {
-                    document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
-                    li.classList.add('active');
-                    loadReport(report.url);
+        // FUNCIÓN CLAVE: Consulta e inyección de datos desde Cloud Firestore en tiempo real
+        async function fetchReportsFromFirebase() {
+            reportListContainer.innerHTML = '<li style="padding:15px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Conectando con la base de datos...</li>';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "reportes"));
+                reportListContainer.innerHTML = '';
+                
+                if (querySnapshot.empty) {
+                    reportListContainer.innerHTML = '<li style="padding:15px; color:rgba(255,255,255,0.4); font-size:0.85rem;">No hay reportes indexados.</li>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const report = doc.data();
+                    const li = document.createElement('li');
+                    li.className = 'report-item';
+                    li.innerHTML = `
+                        <span>${report.title}</span>
+                        <span class="report-date">${report.date}</span>
+                    `;
+                    li.addEventListener('click', () => {
+                        document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+                        li.classList.add('active');
+                        loadReport(report.url);
+                    });
+                    reportListContainer.appendChild(li);
                 });
-                reportListContainer.appendChild(li);
-            });
+            } catch (error) {
+                console.error("Error consultando Cloud Firestore: ", error);
+                reportListContainer.innerHTML = '<li style="padding:15px; color:#FF4B4B; font-size:0.85rem;">Error de conexión.</li>';
+            }
         }
 
         function loadReport(url) {
@@ -385,21 +395,22 @@
             reportViewer.src = url; 
         }
 
-        // CONTROL DE ACCESO CORPORATIVO (Filtro por dominio)
+        // CONTROL DE ACCESO CORPORATIVO (Filtro estricto por dominio)
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 const email = user.email || "";
                 
-                // REGLA DE SEGURIDAD: Permite el dominio corporativo de NFQ O tu cuenta personal de Gmail para que puedas hacer la demostración
+                // REGLA DE SEGURIDAD: Cambiar a conveniencia corporativa final
                 if (email.endsWith('@nfq.es') || email.endsWith('@gmail.com')) {
                     screenAuth.classList.remove('active');
                     screenDashboard.classList.add('active');
                     userContainer.style.display = 'flex';
                     userName.textContent = user.displayName;
                     userPhoto.src = user.photoURL || "";
-                    buildReportList();
+                    
+                    // Al validar el acceso, cargamos las fechas desde la base de datos cloud
+                    fetchReportsFromFirebase();
                 } else {
-                    // Cierre de sesión inmediato y rebote si un correo ajeno intenta entrar
                     alert(`Acceso denegado. Tu cuenta (${email}) no pertenece al dominio corporativo de NFQ.`);
                     signOut(auth);
                 }
